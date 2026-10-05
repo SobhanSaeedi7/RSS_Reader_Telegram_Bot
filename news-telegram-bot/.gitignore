@@ -1,1 +1,2 @@
 .env
+src/news_telegram_bot/__pycache__
