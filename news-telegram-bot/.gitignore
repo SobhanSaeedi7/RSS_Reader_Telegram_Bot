@@ -1,2 +1,6 @@
 .env
-src/news_telegram_bot/__pycache__
+.venv/
+__pycache__/
+*.py[cod]
+.vscode/
+tempCodeRunnerFile.py
