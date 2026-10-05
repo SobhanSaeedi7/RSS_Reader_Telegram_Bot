@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 
-STATE_FILE = Path("news-telegram-bot/data/state.json")
+STATE_FILE = Path("data/state.json")
 
 
 def load_state():

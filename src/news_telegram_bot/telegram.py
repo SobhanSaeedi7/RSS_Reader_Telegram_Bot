@@ -8,10 +8,10 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from src.news_telegram_bot.rss import get_news, get_new_news
-from src.news_telegram_bot.state import load_state, save_state
-from src.news_telegram_bot.article import get_article_html, extract_article_text
-from src.news_telegram_bot.llm import summary_chain
+from news_telegram_bot.rss import get_news, get_new_news
+from news_telegram_bot.state import load_state, save_state
+from news_telegram_bot.article import get_article_html, extract_article_text
+from news_telegram_bot.llm import summary_chain
 
 
 load_dotenv()
@@ -22,21 +22,27 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "سلام! ربات خلاصه‌سازی اخبار ورزشی آماده است. 🏐"
     )
 
+    await check_news()
 
-async def check_news(context: ContextTypes.DEFAULT_TYPE):
+    context.job_queue.run_repeating(
+        check_news_job,
+        interval=60,
+        first=60,
+        chat_id=update.effective_chat.id,
+    )
+
+
+async def check_news():
     print("\nChecking for new news...")
 
-    # دریافت اخبار از RSS
     news = get_news()
 
     if not news:
         print("No news found.")
         return
 
-    # خواندن state
     state = load_state()
 
-    # پیدا کردن اخبار جدید
     new_news = get_new_news(
         news,
         state["last_news_link"]
@@ -48,7 +54,6 @@ async def check_news(context: ContextTypes.DEFAULT_TYPE):
 
     print(f"Found {len(new_news)} new news.")
 
-    # پردازش خبرهای جدید
     for item in reversed(new_news):
         print("\nProcessing:")
         print(item["title"])
@@ -68,12 +73,11 @@ async def check_news(context: ContextTypes.DEFAULT_TYPE):
         print("\nSummary:")
         print(response.content)
 
-        # فقط بعد از موفقیت پردازش، state را به‌روز می‌کنیم
         save_state(item["link"])
 
 
-async def post_init(application: Application):
-    await check_news(None)
+async def check_news_job(context: ContextTypes.DEFAULT_TYPE):
+    await check_news()
 
 
 def run_bot():
@@ -82,15 +86,11 @@ def run_bot():
     application = (
         Application.builder()
         .token(token)
-        .post_init(post_init)
         .build()
     )
 
-    application.add_handler(CommandHandler("start", start))
-
-    application.job_queue.run_repeating(
-        check_news,
-        interval=300,
+    application.add_handler(
+        CommandHandler("start", start)
     )
 
     application.run_polling()
