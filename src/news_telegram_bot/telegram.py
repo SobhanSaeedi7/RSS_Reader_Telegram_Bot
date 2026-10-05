@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from dotenv import load_dotenv
@@ -18,34 +19,43 @@ load_dotenv()
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+
     await update.message.reply_text(
         "سلام! ربات خلاصه‌سازی اخبار ورزشی آماده است. 🏐"
     )
 
-    await check_news()
-
-    context.job_queue.run_repeating(
-        check_news_job,
-        interval=60,
-        first=60,
-        chat_id=update.effective_chat.id,
+    await check_news(
+        context.bot,
+        chat_id,
     )
 
+    if not context.chat_data.get("news_job_started"):
+        context.job_queue.run_repeating(
+            check_news_job,
+            interval=30,
+            first=30,
+            chat_id=chat_id,
+        )
 
-async def check_news():
+        context.chat_data["news_job_started"] = True
+
+
+async def check_news(bot, chat_id):
     print("\nChecking for new news...")
 
-    news = get_news()
+    news = await asyncio.to_thread(get_news)
 
     if not news:
         print("No news found.")
         return
 
-    state = load_state()
+    state = await asyncio.to_thread(load_state)
 
-    new_news = get_new_news(
+    new_news = await asyncio.to_thread(
+        get_new_news,
         news,
-        state["last_news_link"]
+        state["last_news_link"],
     )
 
     if not new_news:
@@ -58,26 +68,52 @@ async def check_news():
         print("\nProcessing:")
         print(item["title"])
 
-        html = get_article_html(item["link"])
+        html = await asyncio.to_thread(
+            get_article_html,
+            item["link"],
+        )
 
-        article_text = extract_article_text(html)
+        article_text = await asyncio.to_thread(
+            extract_article_text,
+            html,
+        )
 
         if article_text is None:
             print("Could not extract article text.")
             continue
 
-        response = summary_chain.invoke({
-            "article_text": article_text
-        })
+        response = await asyncio.to_thread(
+            summary_chain.invoke,
+            {"article_text": article_text},
+        )
+
+        summary = response.content
 
         print("\nSummary:")
-        print(response.content)
+        print(summary)
 
-        save_state(item["link"])
+        message = (
+            f"📰 {item['title']}\n\n"
+            f"{summary}\n\n"
+            f"🔗 {item['link']}"
+        )
+
+        await bot.send_message(
+            chat_id=chat_id,
+            text=message,
+        )
+
+        await asyncio.to_thread(
+            save_state,
+            item["link"],
+        )
 
 
 async def check_news_job(context: ContextTypes.DEFAULT_TYPE):
-    await check_news()
+    await check_news(
+        context.bot,
+        context.job.chat_id,
+    )
 
 
 def run_bot():
