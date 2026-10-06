@@ -33,8 +33,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.chat_data.get("news_job_started"):
         context.job_queue.run_repeating(
             check_news_job,
-            interval=30,
-            first=30,
+            interval=300,
+            first=300,
             chat_id=chat_id,
         )
 
@@ -52,10 +52,12 @@ async def check_news(bot, chat_id):
 
     state = await asyncio.to_thread(load_state)
 
+    last_news_links = state["last_news_links"]
+
     new_news = await asyncio.to_thread(
         get_new_news,
         news,
-        state["last_news_link"],
+        last_news_links,
     )
 
     if not new_news:
@@ -76,6 +78,7 @@ async def check_news(bot, chat_id):
         article_text = await asyncio.to_thread(
             extract_article_text,
             html,
+            item["link"],
         )
 
         if article_text is None:
@@ -103,11 +106,12 @@ async def check_news(bot, chat_id):
             text=message,
         )
 
+        last_news_links[item["source"]] = item["link"]
+
         await asyncio.to_thread(
             save_state,
-            item["link"],
+            last_news_links,
         )
-
 
 async def check_news_job(context: ContextTypes.DEFAULT_TYPE):
     await check_news(
