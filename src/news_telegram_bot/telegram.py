@@ -6,13 +6,19 @@ from telegram import Update
 from telegram.ext import (
     Application,
     CommandHandler,
+    MessageHandler,
     ContextTypes,
+    filters,
 )
 
 from news_telegram_bot.rss import get_news, get_new_news
-from news_telegram_bot.state import load_state, save_state
 from news_telegram_bot.article import get_article_html, extract_article_text
 from news_telegram_bot.llm import summary_chain
+from news_telegram_bot.state import (
+    load_state,
+    save_state,
+    get_chat_state,
+)
 
 
 load_dotenv()
@@ -22,6 +28,20 @@ CHANNEL_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
+
+    state = await asyncio.to_thread(load_state)
+
+    chat_state = get_chat_state(
+        state,
+        chat_id,
+    )
+
+    chat_state["active"] = True
+
+    await asyncio.to_thread(
+        save_state,
+        state,
+    )
 
     await update.message.reply_text(
         "سلام! ربات خلاصه‌سازی اخبار ورزشی آماده است. 🏐"
@@ -38,9 +58,46 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             interval=300,
             first=300,
             chat_id=chat_id,
+            name=f"news_job_{chat_id}",
         )
 
         context.chat_data["news_job_started"] = True
+
+
+async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+
+    state = await asyncio.to_thread(load_state)
+
+    chat_state = get_chat_state(
+        state,
+        chat_id,
+    )
+
+    chat_state["active"] = False
+    chat_state["last_news_links"] = {
+        "varzesh3": None,
+        "khabarvarzeshi": None,
+        "kayhanvarzeshi": None,
+    }
+
+    await asyncio.to_thread(
+        save_state,
+        state,
+    )
+
+    current_jobs = context.job_queue.get_jobs_by_name(
+        f"news_job_{chat_id}"
+    )
+
+    for job in current_jobs:
+        job.schedule_removal()
+
+    context.chat_data["news_job_started"] = False
+
+    await update.message.reply_text(
+        "ربات برای این چت متوقف و وضعیت اخبار ریست شد. 🔄"
+    )
 
 
 async def check_news(bot, chat_id):
@@ -54,7 +111,13 @@ async def check_news(bot, chat_id):
 
     state = await asyncio.to_thread(load_state)
 
-    last_news_links = state["last_news_links"]
+    chat_state = state["chats"].get(str(chat_id))
+
+    if chat_state is None:
+        print("Chat state not found.")
+        return
+
+    last_news_links = chat_state["last_news_links"]
 
     new_news = await asyncio.to_thread(
         get_new_news,
@@ -104,7 +167,7 @@ async def check_news(bot, chat_id):
         )
 
         await bot.send_message(
-            chat_id=CHANNEL_ID,
+            chat_id=chat_id,
             text=message,
         )
 
@@ -112,8 +175,9 @@ async def check_news(bot, chat_id):
 
         await asyncio.to_thread(
             save_state,
-            last_news_links,
+            state,
         )
+
 
 async def check_news_job(context: ContextTypes.DEFAULT_TYPE):
     await check_news(
@@ -133,6 +197,10 @@ def run_bot():
 
     application.add_handler(
         CommandHandler("start", start)
+    )
+
+    application.add_handler(
+        CommandHandler("reset", reset)
     )
 
     application.run_polling()
