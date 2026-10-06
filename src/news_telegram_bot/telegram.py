@@ -17,6 +17,8 @@ from news_telegram_bot.llm import summary_chain
 
 load_dotenv()
 
+CHANNEL_ID = os.getenv("TELEGRAM_CHAT_ID")
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -102,7 +104,7 @@ async def check_news(bot, chat_id):
         )
 
         await bot.send_message(
-            chat_id=chat_id,
+            chat_id=CHANNEL_ID,
             text=message,
         )
 
