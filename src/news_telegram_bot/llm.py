@@ -9,7 +9,7 @@ load_dotenv()
 
 
 model = ChatOpenAI(
-    model="gpt-5.6-luna",
+    model="gpt-6-luna",
     api_key=os.getenv("AVALAI_API_KEY"),
     base_url="https://api.avalai.ir/v1",
     temperature=0,
