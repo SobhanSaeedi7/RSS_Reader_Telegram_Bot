@@ -1,20 +1,3 @@
 {
-    "chats": {
-        "785461366": {
-            "last_news_links": {
-                "varzesh3": null,
-                "khabarvarzeshi": null,
-                "kayhanvarzeshi": null
-            },
-            "active": false
-        },
-        "-1003235980808": {
-            "last_news_links": {
-                "varzesh3": null,
-                "khabarvarzeshi": null,
-                "kayhanvarzeshi": null
-            },
-            "active": false
-        }
-    }
+    "chats": {}
 }
