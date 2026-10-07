@@ -151,18 +151,19 @@ async def check_news(bot, chat_id):
 
             for item in reversed(new_news):
 
-                await process_and_send_news(
+                success = await process_and_send_news(
                     bot,
                     chat_id,
                     item,
                 )
 
-                last_news_links[item["source"]] = item["link"]
+                if success:
+                    last_news_links[item["source"]] = item["link"]
 
-                await asyncio.to_thread(
-                    save_state,
-                    state,
-                )
+                    await asyncio.to_thread(
+                        save_state,
+                        state,
+                    )
 
 
     for channel_id, channel_state in chat_state["channels"].items():
@@ -193,18 +194,19 @@ async def check_news(bot, chat_id):
 
         for item in reversed(new_news):
 
-            await process_and_send_news(
+            success = await process_and_send_news(
                 bot,
-                channel_id,
+                chat_id,
                 item,
             )
 
-            last_news_links[item["source"]] = item["link"]
+            if success:
+                last_news_links[item["source"]] = item["link"]
 
-            await asyncio.to_thread(
-                save_state,
-                state,
-            )
+                await asyncio.to_thread(
+                    save_state,
+                    state,
+                )
 
 
 async def check_news_job(context: ContextTypes.DEFAULT_TYPE):
