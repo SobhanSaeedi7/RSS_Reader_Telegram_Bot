@@ -24,6 +24,7 @@ from news_telegram_bot.state import (
     get_chat_state,
 )
 
+
 load_dotenv()
 
 
@@ -51,17 +52,19 @@ async def start(
         "سلام! ربات خلاصه‌سازی اخبار ورزشی آماده است. 🏐"
     )
 
+    # Check for news immediately
     await check_news(
         context.bot,
         chat_id,
     )
 
+    # Set the schedule
     ensure_news_job(
         context,
         chat_id,
     )
 
-
+#Reset bot
 async def reset(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -87,6 +90,7 @@ async def reset(
         state,
     )
 
+    #Remove the schedule
     current_jobs = context.job_queue.get_jobs_by_name(
         f"news_job_{chat_id}"
     )
@@ -101,12 +105,37 @@ async def reset(
     )
 
 
+#/help commend
+async def help_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    await update.message.reply_text(
+        "ربات « خلاصه اخبار ورزشی»\n\n"
+        "ارسال اخبار - /start\n"
+        "توقف اخبار - /reset\n"
+        "فعال کردن ربات در کانال - /active_on_channel\n"
+        "غیر فعال کردن ربات در کانال - /deactive_on_channel"
+    )
+
+#Handle undefined commends
+async def unknown_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    await help_command(
+        update,
+        context,
+    )
+
+
 def run_bot():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
 
     application = (
         Application.builder()
         .token(token)
+        .concurrent_updates(True)
         .build()
     )
 
@@ -129,6 +158,20 @@ def run_bot():
         CommandHandler(
             "deactive_on_channel",
             deactive_on_channel,
+        )
+    )
+
+    application.add_handler(
+        CommandHandler(
+            "help",
+            help_command,
+        )
+    )
+
+    application.add_handler(
+        MessageHandler(
+            filters.COMMAND,
+            unknown_command,
         )
     )
 

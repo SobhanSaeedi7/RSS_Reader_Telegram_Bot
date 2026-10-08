@@ -18,6 +18,7 @@ async def active_on_channel(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ):
+    #Store the requested action temporarily so the next text message can be treated as the channel link.
     context.user_data["channel_action"] = "activate"
 
     await update.message.reply_text(
@@ -43,11 +44,13 @@ async def handle_channel_link(
 ):
     action = context.user_data.get("channel_action")
 
+    # Ignore normal text messages when the user has not requested a channel deactivation.
     if not action:
         return
 
     link = update.message.text.strip()
 
+    # Only public Telegram channel links are supported.
     if not link.startswith("https://t.me/"):
         await update.message.reply_text(
             "لطفاً لینک معتبر کانال را به صورت "
@@ -83,7 +86,6 @@ async def handle_channel_link(
     )
 
     if action == "activate":
-
         channel_state["username"] = username
         channel_state["active"] = True
 
@@ -92,6 +94,7 @@ async def handle_channel_link(
             state,
         )
 
+        #Stop receiving message from user
         context.user_data.pop(
             "channel_action",
             None,
@@ -102,11 +105,13 @@ async def handle_channel_link(
             "ارسال اخبار به صورت خودکار انجام خواهد شد. ✅"
         )
 
+        # Send available news immediately
         await check_news(
             context.bot,
             update.effective_chat.id,
         )
 
+        #Set the schedule
         ensure_news_job(
             context,
             update.effective_chat.id,
@@ -115,7 +120,7 @@ async def handle_channel_link(
         return
 
     if action == "deactivate":
-
+        # Reset the channel's news history and deactivate it.
         reset_channel_state(
             chat_state,
             channel_id,
