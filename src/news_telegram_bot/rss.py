@@ -1,5 +1,6 @@
 import feedparser
 
+
 RSS_SOURCES = {
     "varzesh3": "https://www.varzesh3.com/rss/all",
     "khabarvarzeshi": "https://www.khabarvarzeshi.com/rss",
@@ -27,20 +28,27 @@ def get_news():
 def get_new_news(news, last_news_links):
     new_news = []
 
-    sources = set(item["source"] for item in news)
+    sources = set(
+        item["source"]
+        for item in news
+    )
 
+    #Compare news of every source with the last saved link of that source to find new news
     for source in sources:
         source_news = [
-            item for item in news
+            item
+            for item in news
             if item["source"] == source
         ]
 
         last_news_link = last_news_links.get(source)
 
+        #If there wasn`t any link(first run), two last news will be send
         if last_news_link is None:
             new_news.extend(source_news[:2])
             continue
 
+        #If we reach to last sent news the loop will break
         for item in source_news:
             if item["link"] == last_news_link:
                 break

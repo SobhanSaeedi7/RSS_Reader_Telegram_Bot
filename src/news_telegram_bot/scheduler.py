@@ -7,6 +7,8 @@ def ensure_news_job(context, chat_id):
     if context.chat_data.get("news_job_started"):
         return
 
+    # Run the news check every 5 minutes.
+    # The first scheduled check also starts after 5 minutes because activation already performs an immediate check.
     context.job_queue.run_repeating(
         check_news_job,
         interval=300,
@@ -21,6 +23,7 @@ def ensure_news_job(context, chat_id):
 async def check_news_job(
     context: ContextTypes.DEFAULT_TYPE,
 ):
+    #Used by manual activation and the /start command.
     await check_news(
         context.bot,
         context.job.chat_id,

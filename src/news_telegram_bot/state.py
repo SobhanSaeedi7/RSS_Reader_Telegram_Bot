@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+
+# Used just a .json for saving data
 STATE_FILE = Path("data/state.json")
 
 SOURCES = [
@@ -45,7 +47,6 @@ def get_chat_state(state, chat_id):
             "channels": {},
         }
 
-
     state["chats"][chat_id].setdefault(
         "channels",
         {},
@@ -71,7 +72,11 @@ def get_channel_state(chat_state, channel_id):
 
 
 def reset_chat_state(state, chat_id):
-    chat_state = get_chat_state(state, chat_id)
+    chat_state = get_chat_state(
+        state,
+        chat_id,
+    )
+
 
     chat_state["last_news_links"] = {
         source: None
@@ -87,9 +92,14 @@ def reset_channel_state(chat_state, channel_id):
         channel_id,
     )
 
+
     channel_state["last_news_links"] = {
         source: None
         for source in SOURCES
     }
 
     channel_state["active"] = False
+
+
+def reset_state():
+    save_state({"chats": {}})

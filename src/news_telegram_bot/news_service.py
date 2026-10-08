@@ -20,6 +20,7 @@ async def process_and_send_news(
     print("\nProcessing:")
     print(item["title"])
 
+    #Run network requests in a separate thread to keep the bot responsive.
     html = await asyncio.to_thread(
         get_article_html,
         item["link"],
@@ -34,6 +35,7 @@ async def process_and_send_news(
     if article_text is None:
         print("Could not extract article text.")
         return False
+
 
     response = await asyncio.to_thread(
         summary_chain.invoke,
@@ -76,6 +78,7 @@ async def check_news(bot, chat_id):
         print("Chat state not found.")
         return
 
+
     if chat_state["active"]:
         await send_news_to_destination(
             bot=bot,
@@ -113,6 +116,8 @@ async def send_news_to_destination(
     last_news_links,
     news,
 ):
+
+
     new_news = await asyncio.to_thread(
         get_new_news,
         news,
@@ -127,6 +132,7 @@ async def send_news_to_destination(
         f"for destination {destination_id}."
     )
 
+    # Reverse the list so older new articles are sent first
     for item in reversed(new_news):
         current_state = await asyncio.to_thread(
             load_state,
@@ -170,6 +176,7 @@ async def send_news_to_destination(
                 current_channel_state["last_news_links"]
             )
 
+        #Stop before processing the next article if the destination has been reset or deactivated.
         if not is_active:
             print(
                 "Destination is inactive. "
@@ -184,7 +191,10 @@ async def send_news_to_destination(
         )
 
         if success:
-            current_last_news_links[item["source"]] = item["link"]
+            #Save the link only after the article has been successfully processed and sent.
+            current_last_news_links[
+                item["source"]
+            ] = item["link"]
 
             await asyncio.to_thread(
                 save_state,
