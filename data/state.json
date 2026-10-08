@@ -1,3 +1,23 @@
 {
-    "chats": {}
+    "chats": {
+        "785461366": {
+            "last_news_links": {
+                "varzesh3": null,
+                "khabarvarzeshi": null,
+                "kayhanvarzeshi": null
+            },
+            "active": false,
+            "channels": {
+                "-1003855511492": {
+                    "username": "@Sport_News_Summarizes",
+                    "active": false,
+                    "last_news_links": {
+                        "varzesh3": null,
+                        "khabarvarzeshi": null,
+                        "kayhanvarzeshi": null
+                    }
+                }
+            }
+        }
+    }
 }

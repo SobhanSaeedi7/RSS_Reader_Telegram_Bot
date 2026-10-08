@@ -101,12 +101,33 @@ async def reset(
     )
 
 
+async def help_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    await update.message.reply_text(
+        "ربات « خلاصه اخبار ورزشی»\n\n"
+        "ارسال اخبار - /start\n"
+        "توقف اخبار - /reset\n"
+        "فعال کردن ربات در کانال - /active_on_channel\n"
+        "غیر فعال کردن ربات در کانال - /deactive_on_channel"
+    )
+
+
+async def unknown_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    await help_command(update, context)
+
+
 def run_bot():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
 
     application = (
         Application.builder()
         .token(token)
+        .concurrent_updates(True)
         .build()
     )
 
@@ -129,6 +150,17 @@ def run_bot():
         CommandHandler(
             "deactive_on_channel",
             deactive_on_channel,
+        )
+    )
+
+    application.add_handler(
+        CommandHandler("help", help_command)
+    )
+
+    application.add_handler(
+        MessageHandler(
+            filters.COMMAND,
+            unknown_command,
         )
     )
 
